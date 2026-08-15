@@ -1,0 +1,29 @@
+.mfa-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mfa-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.35rem;
+  background: var(--color-lime);
+}
+
+.mfa-code-input {
+  padding-inline: 1.25rem !important;
+  font-size: 1.5rem !important;
+  font-weight: 750;
+  letter-spacing: 0.5rem;
+  text-align: center;
+}
+
+.mfa-code-input::placeholder {
+  letter-spacing: 0.5rem;
+}
+
+.mfa-card .auth-card__footer {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border-soft);
+}

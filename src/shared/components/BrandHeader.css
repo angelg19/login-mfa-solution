@@ -1,0 +1,31 @@
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.brand-header__logo {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.brand-header__title {
+  color: var(--color-heading);
+  font-size: 1rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 24rem) {
+  .brand-header__logo {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .brand-header__title {
+    font-size: 0.9rem;
+  }
+}

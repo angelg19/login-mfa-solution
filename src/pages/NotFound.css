@@ -1,0 +1,12 @@
+.not-found-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.not-found-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.35rem;
+  background: var(--color-blue);
+}

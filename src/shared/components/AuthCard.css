@@ -1,0 +1,14 @@
+.auth-card {
+  width: min(100%, 27rem);
+}
+
+.auth-card__header {
+  margin-bottom: 2rem;
+}
+
+.auth-card__footer {
+  margin-top: 1.75rem;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
