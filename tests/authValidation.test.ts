@@ -1,7 +1,37 @@
 import { describe, it } from '@jest/globals'
-import { validateEmail, validatePassword } from '../src/validation/authValidation'
+import {
+  validateEmail,
+  validateName,
+  validatePassword,
+} from '../src/validation/authValidation'
 
 describe('auth validation', () => {
+  describe('validateName', () => {
+    it('requires a name', () => {
+      expect(validateName('')).toEqual(['Full name is required.'])
+    })
+
+    it('reports length and character violations together', () => {
+      expect(validateName('1')).toEqual([
+        'Full name must be between 2 and 36 characters.',
+        'Full name can contain only letters, spaces, hyphens, apostrophes, and periods.',
+      ])
+    })
+
+    it('rejects names longer than 36 characters', () => {
+      expect(validateName('A'.repeat(37))).toContain(
+        'Full name must be between 2 and 36 characters.',
+      )
+    })
+
+    it.each(['Anne-Marie', "D'Angelo", 'O’Connor', 'J. Smith', 'José Álvarez'])(
+      'accepts valid name punctuation and Unicode letters in %s',
+      (name) => {
+        expect(validateName(name)).toEqual([])
+      },
+    )
+  })
+
   describe('validateEmail', () => {
     it('requires an email address', () => {
       expect(validateEmail('')).toBe('Email address is required.')

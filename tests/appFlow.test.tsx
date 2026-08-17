@@ -51,6 +51,24 @@ describe('application authentication flow', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows every applicable Sign Up name validation error', async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, '', '/signup')
+    render(<App />)
+
+    await user.type(screen.getByLabelText('Full name'), '1')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(
+      screen.getByText('Full name must be between 2 and 36 characters.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Full name can contain only letters, spaces, hyphens, apostrophes, and periods.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('recovers when the Sign Up request unexpectedly fails', async () => {
     jest.spyOn(mockAuthApi, 'submitSignUp').mockRejectedValueOnce(
       new Error('Network failure'),

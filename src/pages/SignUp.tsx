@@ -6,7 +6,11 @@ import Button from '../shared/components/Button'
 import FormError from '../shared/components/FormError'
 import FormField from '../shared/components/FormField'
 import PasswordInput from '../shared/components/PasswordInput'
-import { validateEmail, validatePassword } from '../validation/authValidation'
+import {
+  validateEmail,
+  validateName,
+  validatePassword,
+} from '../validation/authValidation'
 import './SignUp.css'
 
 export default function SignUpPage() {
@@ -16,10 +20,11 @@ export default function SignUpPage() {
   const [isComplete, setIsComplete] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [requestError, setRequestError] = useState('')
-  const [nameError, setNameError] = useState<string | null>(null)
+  const [nameErrors, setNameErrors] = useState<string[]>([])
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordErrors, setPasswordErrors] = useState<string[]>([])
   const [emailTouched, setEmailTouched] = useState(false)
+  const [nameTouched, setNameTouched] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
   const navigate = useNavigate()
 
@@ -27,16 +32,21 @@ export default function SignUpPage() {
     event.preventDefault()
     setRequestError('')
 
-    const nextNameError = name.trim() ? null : 'Full name is required.'
+    const nextNameErrors = validateName(name)
     const nextEmailError = validateEmail(email)
     const nextPasswordErrors = validatePassword(password)
-    setNameError(nextNameError)
+    setNameTouched(true)
+    setNameErrors(nextNameErrors)
     setEmailTouched(true)
     setPasswordTouched(true)
     setEmailError(nextEmailError)
     setPasswordErrors(nextPasswordErrors)
 
-    if (nextNameError || nextEmailError || nextPasswordErrors.length > 0) {
+    if (
+      nextNameErrors.length > 0 ||
+      nextEmailError ||
+      nextPasswordErrors.length > 0
+    ) {
       return
     }
 
@@ -100,24 +110,30 @@ export default function SignUpPage() {
       }
     >
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <FormField id="signup-name" label="Full name" error={nameError}>
+        <FormField id="signup-name" label="Full name" error={nameErrors}>
           <input
             id="signup-name"
             name="name"
             type="text"
             value={name}
             onChange={(event) => {
-              setName(event.target.value)
+              const nextName = event.target.value
+              setName(nextName)
               setRequestError('')
-              if (nameError) {
-                setNameError(event.target.value.trim() ? null : 'Full name is required.')
+              if (nameTouched) {
+                setNameErrors(validateName(nextName))
               }
             }}
-            onBlur={() => setNameError(name.trim() ? null : 'Full name is required.')}
+            onBlur={() => {
+              setNameTouched(true)
+              setNameErrors(validateName(name))
+            }}
             placeholder="Your name"
             autoComplete="name"
-            aria-invalid={Boolean(nameError)}
-            aria-describedby={nameError ? 'signup-name-error' : undefined}
+            aria-invalid={nameErrors.length > 0}
+            aria-describedby={
+              nameErrors.length > 0 ? 'signup-name-error' : undefined
+            }
             required
           />
         </FormField>

@@ -4,9 +4,42 @@
  * require server-side verification such as sending a confirmation message.
  */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const NAME_ALLOWED_PATTERN = /^[\p{L}\p{M} .'’-]+$/u
+const NAME_LETTER_PATTERN = /\p{L}/u
 const LOWERCASE_PATTERN = /[a-z]/
 const UPPERCASE_PATTERN = /[A-Z]/
 const SYMBOL_PATTERN = /[^A-Za-z0-9\s]/
+
+export function validateName(name: string): string[] {
+  const normalizedName = name.trim()
+
+  if (!normalizedName) {
+    return ['Full name is required.']
+  }
+
+  const errors: string[] = []
+  const characterCount = [...normalizedName].length
+
+  if (characterCount < 2 || characterCount > 36) {
+    errors.push('Full name must be between 2 and 36 characters.')
+  }
+
+  /**
+   * Unicode letters and combining marks support international names. Spaces,
+   * hyphens, straight/curly apostrophes, and periods cover common name
+   * punctuation while excluding digits and unrelated symbols.
+   */
+  if (
+    !NAME_ALLOWED_PATTERN.test(normalizedName) ||
+    !NAME_LETTER_PATTERN.test(normalizedName)
+  ) {
+    errors.push(
+      'Full name can contain only letters, spaces, hyphens, apostrophes, and periods.',
+    )
+  }
+
+  return errors
+}
 
 export function validateEmail(email: string): string | null {
   const normalizedEmail = email.trim()
