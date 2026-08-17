@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals'
+import { afterEach, beforeEach, describe, it, jest } from '@jest/globals'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../src/App'
@@ -7,7 +7,7 @@ import { useAuthStore } from '../src/stores/auth'
 
 describe('application authentication flow', () => {
   beforeEach(() => {
-    useAuthStore.getState().signOut()
+    useAuthStore.getState().resetFlow()
     window.history.pushState({}, '', '/login')
   })
 
@@ -28,9 +28,48 @@ describe('application authentication flow', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(
-      screen.getByRole('heading', { name: 'Account details received' }),
+      await screen.findByRole('heading', { name: 'Account details received' }),
     ).toBeInTheDocument()
     expect(screen.getByText('Thanks, Sample User.')).toBeInTheDocument()
+  })
+
+  it('shows an error when Sign Up uses an existing mock account email', async () => {
+    const user = userEvent.setup()
+    window.history.pushState({}, '', '/signup')
+    render(<App />)
+
+    await user.type(screen.getByLabelText('Full name'), 'Existing User')
+    await user.type(screen.getByLabelText('Email address'), 'VIEWER@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password123!')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(
+      await screen.findByText('An account with this email address already exists.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Create an account' }),
+    ).toBeInTheDocument()
+  })
+
+  it('recovers when the Sign Up request unexpectedly fails', async () => {
+    jest.spyOn(mockAuthApi, 'submitSignUp').mockRejectedValueOnce(
+      new Error('Network failure'),
+    )
+    const user = userEvent.setup()
+    window.history.pushState({}, '', '/signup')
+    render(<App />)
+
+    await user.type(screen.getByLabelText('Full name'), 'Sample User')
+    await user.type(screen.getByLabelText('Email address'), 'sample@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password123!')
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(
+      await screen.findByText(
+        'Unable to submit your details right now. Please try again.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled()
   })
 
   it('completes login and MFA before showing the protected Dashboard', async () => {
@@ -95,7 +134,7 @@ describe('application authentication flow', () => {
   })
 
   it('recovers when the login request unexpectedly fails', async () => {
-    jest.spyOn(mockAuthApi, 'login').mockRejectedValueOnce(new Error('Network failure'))
+    jest.spyOn(mockAuthApi, 'submitPassword').mockRejectedValueOnce(new Error('Network failure'))
     const user = userEvent.setup()
     render(<App />)
 
@@ -110,12 +149,9 @@ describe('application authentication flow', () => {
   })
 
   it('recovers when the MFA request unexpectedly fails', async () => {
-    useAuthStore.getState().beginMfa({
-      challengeId: 'challenge-1',
-      maskedEmail: 'e*****@example.com',
-    })
+    useAuthStore.getState().beginOtp('pre-auth-token', 'editor@example.com')
     window.history.pushState({}, '', '/mfa')
-    jest.spyOn(mockAuthApi, 'verifyMfa').mockRejectedValueOnce(new Error('Network failure'))
+    jest.spyOn(mockAuthApi, 'submitOtp').mockRejectedValueOnce(new Error('Network failure'))
     const user = userEvent.setup()
     render(<App />)
 
@@ -145,8 +181,10 @@ describe('application authentication flow', () => {
           name: 'Read Write User',
           role: 'read-write',
         },
-        pendingChallenge: null,
-        status: 'authenticated',
+        isAuthenticated: true,
+        authStep: 'COMPLETE',
+        preAuthToken: null,
+        pendingEmail: null,
       })
       window.history.pushState({}, '', route)
       render(<App />)
@@ -166,6 +204,24 @@ describe('application authentication flow', () => {
 
     await user.click(screen.getByRole('button', { name: 'Return to sign in' }))
     expect(screen.getByRole('heading', { name: 'Sign in to your account' })).toBeInTheDocument()
+  })
+
+  it('returns an authenticated user from Not Found to the Dashboard', async () => {
+    const user = userEvent.setup()
+    useAuthStore.getState().completeAuth({
+      id: 'user-read-write',
+      email: 'editor@example.com',
+      name: 'Read Write User',
+      role: 'read-write',
+    })
+    window.history.pushState({}, '', '/does-not-exist')
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Return to dashboard' }))
+
+    expect(
+      screen.getByRole('heading', { name: 'Welcome, Read Write User' }),
+    ).toBeInTheDocument()
   })
 
   it('does not offer an unsupported Forgot Password action', () => {

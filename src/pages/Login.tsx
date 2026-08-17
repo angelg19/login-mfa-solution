@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { login } from '../api/auth/mockAuthApi'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { submitPassword } from '../api/auth/mockAuthApi'
 import AuthCard from '../shared/components/AuthCard'
 import Button from '../shared/components/Button'
 import FormError from '../shared/components/FormError'
@@ -10,16 +10,19 @@ import { useAuthStore } from '../stores/auth'
 import { validateEmail, validatePassword } from '../validation/authValidation'
 
 export default function LoginPage() {
+  const location = useLocation()
+  const navigationError = (location.state as { authError?: string } | null)
+    ?.authError
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(navigationError ?? '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordErrors, setPasswordErrors] = useState<string[]>([])
   const [emailTouched, setEmailTouched] = useState(false)
   const [passwordTouched, setPasswordTouched] = useState(false)
   const navigate = useNavigate()
-  const beginMfa = useAuthStore((state) => state.beginMfa)
+  const beginOtp = useAuthStore((state) => state.beginOtp)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -38,14 +41,14 @@ export default function LoginPage() {
 
     setIsSubmitting(true)
     try {
-      const result = await login(email, password)
+      const result = await submitPassword(email, password)
 
       if (!result.success) {
         setError(result.error.message)
         return
       }
 
-      beginMfa(result.data)
+      beginOtp(result.data.preAuthToken, result.data.pendingEmail)
       navigate('/mfa')
     } catch {
       setError('Unable to sign in right now. Please try again.')

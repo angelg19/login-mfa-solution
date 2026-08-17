@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals'
+import { beforeEach, describe, it } from '@jest/globals'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -8,8 +8,10 @@ import { useAuthStore, type User } from '../src/stores/auth'
 function renderDashboard(user: User) {
   useAuthStore.setState({
     user,
-    pendingChallenge: null,
-    status: 'authenticated',
+    isAuthenticated: true,
+    authStep: 'COMPLETE',
+    preAuthToken: null,
+    pendingEmail: null,
   })
 
   return render(
@@ -21,7 +23,7 @@ function renderDashboard(user: User) {
 
 describe('Dashboard permissions', () => {
   beforeEach(() => {
-    useAuthStore.getState().signOut()
+    useAuthStore.getState().resetFlow()
   })
 
   it('prevents a read-only user from editing either description', async () => {

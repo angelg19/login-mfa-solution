@@ -1,10 +1,5 @@
-import { beforeEach, describe, expect, it } from '@jest/globals'
-import { useAuthStore, type MfaChallenge, type User } from '../src/stores/auth'
-
-const challenge: MfaChallenge = {
-  challengeId: 'challenge-1',
-  maskedEmail: 'e*****@example.com',
-}
+import { beforeEach, describe, it } from '@jest/globals'
+import { useAuthStore, type User } from '../src/stores/auth'
 
 const user: User = {
   id: 'user-read-write',
@@ -15,38 +10,44 @@ const user: User = {
 
 describe('useAuthStore', () => {
   beforeEach(() => {
-    useAuthStore.getState().signOut()
+    useAuthStore.getState().resetFlow()
   })
 
-  it('tracks the MFA challenge without authenticating the user', () => {
-    useAuthStore.getState().beginMfa(challenge)
+  it('tracks pre-authentication data without authenticating the user', () => {
+    useAuthStore.getState().beginOtp('pre-auth-token', 'editor@example.com')
 
     expect(useAuthStore.getState()).toMatchObject({
       user: null,
-      pendingChallenge: challenge,
-      status: 'awaiting-mfa',
+      isAuthenticated: false,
+      authStep: 'OTP_INPUT',
+      preAuthToken: 'pre-auth-token',
+      pendingEmail: 'editor@example.com',
     })
   })
 
-  it('authenticates only after MFA is completed', () => {
-    useAuthStore.getState().beginMfa(challenge)
-    useAuthStore.getState().completeMfa(user)
+  it('authenticates only after OTP verification is completed', () => {
+    useAuthStore.getState().beginOtp('pre-auth-token', 'editor@example.com')
+    useAuthStore.getState().completeAuth(user)
 
     expect(useAuthStore.getState()).toMatchObject({
       user,
-      pendingChallenge: null,
-      status: 'authenticated',
+      isAuthenticated: true,
+      authStep: 'COMPLETE',
+      preAuthToken: null,
+      pendingEmail: null,
     })
   })
 
-  it('clears the authenticated session on sign out', () => {
-    useAuthStore.getState().completeMfa(user)
-    useAuthStore.getState().signOut()
+  it('clears the authenticated session and flow state on reset', () => {
+    useAuthStore.getState().completeAuth(user)
+    useAuthStore.getState().resetFlow()
 
     expect(useAuthStore.getState()).toMatchObject({
       user: null,
-      pendingChallenge: null,
-      status: 'signed-out',
+      isAuthenticated: false,
+      authStep: 'PASSWORD_INPUT',
+      preAuthToken: null,
+      pendingEmail: null,
     })
   })
 })

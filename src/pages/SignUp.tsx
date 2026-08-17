@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { submitSignUp } from '../api/auth/mockAuthApi'
 import AuthCard from '../shared/components/AuthCard'
 import Button from '../shared/components/Button'
+import FormError from '../shared/components/FormError'
 import FormField from '../shared/components/FormField'
 import PasswordInput from '../shared/components/PasswordInput'
 import { validateEmail, validatePassword } from '../validation/authValidation'
@@ -12,6 +14,8 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isComplete, setIsComplete] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [requestError, setRequestError] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordErrors, setPasswordErrors] = useState<string[]>([])
@@ -19,8 +23,9 @@ export default function SignUpPage() {
   const [passwordTouched, setPasswordTouched] = useState(false)
   const navigate = useNavigate()
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setRequestError('')
 
     const nextNameError = name.trim() ? null : 'Full name is required.'
     const nextEmailError = validateEmail(email)
@@ -35,7 +40,31 @@ export default function SignUpPage() {
       return
     }
 
-    setIsComplete(true)
+    setIsSubmitting(true)
+
+    try {
+      const result = await submitSignUp({
+        name: name.trim(),
+        email,
+        password,
+      })
+
+      if (!result.success) {
+        if (result.error.code === 'EMAIL_IN_USE') {
+          setEmailError(result.error.message)
+          return
+        }
+
+        setRequestError(result.error.message)
+        return
+      }
+
+      setIsComplete(true)
+    } catch {
+      setRequestError('Unable to submit your details right now. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isComplete) {
@@ -79,6 +108,7 @@ export default function SignUpPage() {
             value={name}
             onChange={(event) => {
               setName(event.target.value)
+              setRequestError('')
               if (nameError) {
                 setNameError(event.target.value.trim() ? null : 'Full name is required.')
               }
@@ -101,6 +131,7 @@ export default function SignUpPage() {
             onChange={(event) => {
               const nextEmail = event.target.value
               setEmail(nextEmail)
+              setRequestError('')
               if (emailTouched) {
                 setEmailError(validateEmail(nextEmail))
               }
@@ -125,6 +156,7 @@ export default function SignUpPage() {
             onChange={(event) => {
               const nextPassword = event.target.value
               setPassword(nextPassword)
+              setRequestError('')
               if (passwordTouched) {
                 setPasswordErrors(validatePassword(nextPassword))
               }
@@ -148,8 +180,10 @@ export default function SignUpPage() {
           Demo only: these details will not be stored or used to create an account.
         </p>
 
-        <Button type="submit" fullWidth>
-          Continue
+        <FormError message={requestError} />
+
+        <Button type="submit" fullWidth disabled={isSubmitting}>
+          {isSubmitting ? 'Checking details...' : 'Continue'}
         </Button>
       </form>
     </AuthCard>

@@ -1,14 +1,13 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import  LoginPage from './pages/Login';
-import  DashboardPage from './pages/Dashboard'
-import ProtectedRoute from './routing/ProtectedRoute';
-import MfaAuthenticationPage from './pages/MfaAuthentication';
-import SignUpPage from './pages/SignUp';
-import NotFoundPage from './pages/NotFound';
-import PublicOnlyRoute from './routing/PublicOnlyRoute';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import DashboardPage from './pages/Dashboard'
+import LoginPage from './pages/Login'
+import MfaAuthenticationPage from './pages/MfaAuthentication'
+import NotFoundPage from './pages/NotFound'
+import SignUpPage from './pages/SignUp'
+import ProtectedRoute from './routing/ProtectedRoute'
+import PublicOnlyRoute from './routing/PublicOnlyRoute'
 
 function App() {
-
   return (
     <BrowserRouter>
       <Routes>

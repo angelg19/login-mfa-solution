@@ -1,3 +1,8 @@
+/**
+ * This intentionally lightweight pattern catches common formatting mistakes.
+ * It does not attempt to prove that an address or domain exists; that would
+ * require server-side verification such as sending a confirmation message.
+ */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const LOWERCASE_PATTERN = /[a-z]/
 const UPPERCASE_PATTERN = /[A-Z]/
@@ -22,6 +27,11 @@ export function validatePassword(password: string): string[] {
     return ['Password is required.']
   }
 
+  /**
+   * Password validation collects every unmet rule instead of returning after
+   * the first failure, allowing the form to tell the user everything that must
+   * be corrected in a single attempt.
+   */
   const errors: string[] = []
 
   if (password.length < 8 || password.length > 24) {

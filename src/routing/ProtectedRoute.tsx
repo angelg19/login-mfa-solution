@@ -2,13 +2,15 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 
 export default function ProtectedRoute() {
-  const { status } = useAuthStore()
+  const authStep = useAuthStore((state) => state.authStep)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
 
-  if (status === 'awaiting-mfa') {
+  if (authStep === 'OTP_INPUT') {
     return <Navigate to="/mfa" replace />
   }
 
-  if (status !== 'authenticated') {
+  if (authStep !== 'COMPLETE' || !isAuthenticated || !user) {
     return <Navigate to="/login" replace />
   }
 

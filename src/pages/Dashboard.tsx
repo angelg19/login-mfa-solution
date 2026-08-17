@@ -13,7 +13,7 @@ export default function DashboardPage() {
     'Use this space to keep a short note about your access needs.',
   )
   const user = useAuthStore((state) => state.user)
-  const signOut = useAuthStore((state) => state.signOut)
+  const resetFlow = useAuthStore((state) => state.resetFlow)
   const navigate = useNavigate()
 
   if (!user) {
@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const canEdit = user.role === 'read-write'
 
   function handleSignOut() {
-    signOut()
+    resetFlow()
     navigate('/login', { replace: true })
   }
 

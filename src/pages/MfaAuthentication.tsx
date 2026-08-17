@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { cancelMfaChallenge, verifyMfa } from '../api/auth/mockAuthApi'
+import { cancelPreAuth, submitOtp } from '../api/auth/mockAuthApi'
 import AuthCard from '../shared/components/AuthCard'
 import Button from '../shared/components/Button'
 import FormError from '../shared/components/FormError'
@@ -13,20 +13,21 @@ export default function MfaAuthenticationPage() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
-  const pendingChallenge = useAuthStore((state) => state.pendingChallenge)
-  const status = useAuthStore((state) => state.status)
-  const completeMfa = useAuthStore((state) => state.completeMfa)
-  const signOut = useAuthStore((state) => state.signOut)
+  const authStep = useAuthStore((state) => state.authStep)
+  const preAuthToken = useAuthStore((state) => state.preAuthToken)
+  const pendingEmail = useAuthStore((state) => state.pendingEmail)
+  const completeAuth = useAuthStore((state) => state.completeAuth)
+  const resetFlow = useAuthStore((state) => state.resetFlow)
 
-  if (status === 'authenticated') {
+  if (authStep === 'COMPLETE') {
     return <Navigate to="/dashboard" replace />
   }
 
-  if (!pendingChallenge) {
+  if (authStep !== 'OTP_INPUT' || !preAuthToken || !pendingEmail) {
     return <Navigate to="/login" replace />
   }
 
-  const challenge = pendingChallenge
+  const activePreAuthToken = preAuthToken
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -34,14 +35,23 @@ export default function MfaAuthenticationPage() {
     setIsSubmitting(true)
 
     try {
-      const result = await verifyMfa(challenge.challengeId, code)
+      const result = await submitOtp(activePreAuthToken, code)
 
       if (!result.success) {
+        if (result.error.code === 'INVALID_PRE_AUTH_TOKEN') {
+          resetFlow()
+          navigate('/login', {
+            replace: true,
+            state: { authError: result.error.message },
+          })
+          return
+        }
+
         setError(result.error.message)
         return
       }
 
-      completeMfa(result.data)
+      completeAuth(result.data)
       navigate('/dashboard', { replace: true })
     } catch {
       setError('Unable to verify the code right now. Please try again.')
@@ -51,8 +61,8 @@ export default function MfaAuthenticationPage() {
   }
 
   function handleDifferentAccount() {
-    cancelMfaChallenge(challenge.challengeId)
-    signOut()
+    cancelPreAuth(activePreAuthToken)
+    resetFlow()
   }
 
   return (
@@ -62,7 +72,7 @@ export default function MfaAuthenticationPage() {
       title="Verify it's you"
       description={
         <>
-          Enter the 6-digit code sent to <strong>{challenge.maskedEmail}</strong>.
+          Enter the 6-digit code sent to <strong>{pendingEmail}</strong>.
         </>
       }
       className="mfa-card"

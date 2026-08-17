@@ -2,13 +2,15 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
 
 export default function PublicOnlyRoute() {
-  const status = useAuthStore((state) => state.status)
+  const authStep = useAuthStore((state) => state.authStep)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
 
-  if (status === 'authenticated') {
+  if (authStep === 'COMPLETE' && isAuthenticated && user) {
     return <Navigate to="/dashboard" replace />
   }
 
-  if (status === 'awaiting-mfa') {
+  if (authStep === 'OTP_INPUT') {
     return <Navigate to="/mfa" replace />
   }
 
